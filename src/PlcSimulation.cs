@@ -209,7 +209,7 @@ namespace OpcPlc
             double nextValue = TREND_BASEVALUE;
             if (GeneratePosTrend && _posTrendPhase >= _posTrendAnomalyPhase)
             {
-                nextValue = TREND_BASEVALUE + ((_posTrendPhase - _posTrendAnomalyPhase) / 10);
+                nextValue = TREND_BASEVALUE + ((_posTrendPhase - _posTrendAnomalyPhase) / 10d);
                 Logger.Verbose("Generate postrend anomaly");
             }
 
@@ -234,7 +234,7 @@ namespace OpcPlc
             double nextValue = TREND_BASEVALUE;
             if (GenerateNegTrend && _negTrendPhase >= _negTrendAnomalyPhase)
             {
-                nextValue = TREND_BASEVALUE - ((_negTrendPhase - _negTrendAnomalyPhase) / 10);
+                nextValue = TREND_BASEVALUE - ((_negTrendPhase - _negTrendAnomalyPhase) / 10d);
                 Logger.Verbose("Generate negtrend anomaly");
             }
 
