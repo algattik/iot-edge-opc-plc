@@ -11,8 +11,6 @@ namespace OpcPlc.Tests
     [Parallelizable(ParallelScope.All)]
     public class PlcSimulatorTests : SimulatorTestsBase
     {
-        private const string OpcPlcNamespaceUri = "http://microsoft.com/Opc/OpcPlc/";
-        
         // FIXME: simulator does not update trended and boolean values in the first few cycles
         private const int RampUpPeriods = 6;
 
@@ -134,15 +132,5 @@ namespace OpcPlc.Tests
                 secondValue.Should().BeLessThan(firstValue);
             }
         }
-
-        private NodeId GetOpcPlcNodeId(string identifier)
-        {
-            var nodeId = NodeId.Create(
-                identifier,
-                OpcPlcNamespaceUri,
-                Session.NamespaceUris);
-            return nodeId;
-        }
-
     }
 }
