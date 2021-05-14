@@ -1,6 +1,7 @@
 namespace OpcPlc.Tests
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using FluentAssertions;
     using NUnit.Framework;
@@ -33,16 +34,11 @@ namespace OpcPlc.Tests
         [Test]
         [TestCase("FastUInt1", typeof(uint), 1)]
         [TestCase("SlowUInt1", typeof(uint), 10)]
-        [TestCase("BadFastUInt1", typeof(uint), 1)]
-        [TestCase("BadSlowUInt1", typeof(uint), 10)]
         [TestCase("RandomSignedInt32", typeof(int), 0.1)]
         [TestCase("RandomUnsignedInt32", typeof(uint), 0.1)]
         public void Telemetry_ChangesWithPeriod(string identifier, Type type, double periodInSeconds)
         {
-            var nodeId = NodeId.Create(
-                identifier,
-                OpcPlcNamespaceUri,
-                _session.NamespaceUris);
+            var nodeId = GetOpcPlcNodeId(identifier);
 
             var period = TimeSpan.FromSeconds(periodInSeconds);
             
@@ -73,5 +69,67 @@ namespace OpcPlc.Tests
 
             numberOfValueChanges.Should().BeInRange(1, 2);
         }
+
+        [Test]
+        [TestCase("BadFastUInt1", 1)]
+        public void BadNode_HasAlternatingStatusCode(string identifier, double periodInSeconds)
+        {
+            var nodeId = GetOpcPlcNodeId(identifier);
+
+            var period = TimeSpan.FromSeconds(periodInSeconds);
+            var cycles = 15;
+            var splinterval = 10;
+            var n = cycles * splinterval;
+            var values = Enumerable.Range(0, n)
+                .Select(i =>
+                {
+                    if (i > 0)
+                    {
+                        Thread.Sleep(period / splinterval);
+                    }
+
+                    try
+                    {
+                        var value = _session.ReadValue(nodeId);
+                        return (value.StatusCode, value.Value);
+                    }
+                    catch (ServiceResultException e)
+                    {
+                        return (e.StatusCode, null);
+                    }
+                }).ToList();
+
+            var valuesByStatus = values.GroupBy(v => v.StatusCode).ToDictionary(g => g.Key, g => g.ToList());
+
+            valuesByStatus
+                .Keys.Should().BeEquivalentTo(new[]
+                {
+                    StatusCodes.Good,
+                    StatusCodes.UncertainLastUsableValue,
+                    StatusCodes.BadDataLost,
+                    StatusCodes.BadNoCommunication,
+                });
+
+            valuesByStatus
+                .Should().ContainKey(StatusCodes.Good)
+                .WhichValue
+                .Should().HaveCountGreaterThan(n * 5 / 10)
+                .And.OnlyContain(v => v.Value != null);
+            
+            valuesByStatus
+                .Should().ContainKey(StatusCodes.UncertainLastUsableValue)
+                .WhichValue
+                .Should().OnlyContain(v => v.Value != null);
+        }
+
+        private NodeId GetOpcPlcNodeId(string identifier)
+        {
+            var nodeId = NodeId.Create(
+                identifier,
+                OpcPlcNamespaceUri,
+                _session.NamespaceUris);
+            return nodeId;
+        }
+
     }
 }
