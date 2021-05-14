@@ -6,24 +6,15 @@ namespace OpcPlc.Tests
     using FluentAssertions;
     using NUnit.Framework;
     using Opc.Ua;
-    using Opc.Ua.Client;
 
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
-    public class PlcSimulatorTests
+    public class PlcSimulatorTests : SimulatorTestsBase
     {
         private const string OpcPlcNamespaceUri = "http://microsoft.com/Opc/OpcPlc/";
         
         // FIXME: simulator does not update trended and boolean values in the first few cycles
         private const int RampUpPeriods = 6;
-
-        private Session _session;
-
-        [OneTimeSetUp]
-        public void Setup()
-        {
-            _session = PlcSimulatorFixture.Instance.CreateSessionAsync(nameof(PlcSimulatorTests)).GetAwaiter().GetResult();
-        }
 
         [Test]
         [TestCase("FastUInt1", typeof(uint), 1, 0)]
@@ -52,7 +43,7 @@ namespace OpcPlc.Tests
                     Thread.Sleep(period / 3);
                 }
 
-                var value = _session.ReadValue(nodeId).Value;
+                var value = Session.ReadValue(nodeId).Value;
                 value.Should().BeOfType(type);
 
                 if (i > 0)
@@ -89,7 +80,7 @@ namespace OpcPlc.Tests
 
                     try
                     {
-                        var value = _session.ReadValue(nodeId);
+                        var value = Session.ReadValue(nodeId);
                         return (value.StatusCode, value.Value);
                     }
                     catch (ServiceResultException e)
@@ -131,9 +122,9 @@ namespace OpcPlc.Tests
             var period = TimeSpan.FromSeconds(periodInSeconds);
             Thread.Sleep(period * RampUpPeriods);
 
-            var firstValue = (double)_session.ReadValue(nodeId).Value;
+            var firstValue = (double)Session.ReadValue(nodeId).Value;
             Thread.Sleep(period);
-            var secondValue = (double)_session.ReadValue(nodeId).Value;
+            var secondValue = (double)Session.ReadValue(nodeId).Value;
             if (increasing)
             {
                 secondValue.Should().BeGreaterThan(firstValue);
@@ -149,7 +140,7 @@ namespace OpcPlc.Tests
             var nodeId = NodeId.Create(
                 identifier,
                 OpcPlcNamespaceUri,
-                _session.NamespaceUris);
+                Session.NamespaceUris);
             return nodeId;
         }
 
