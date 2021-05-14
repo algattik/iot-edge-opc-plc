@@ -54,7 +54,7 @@ namespace OpcPlc.Tests
                 DisplayName = nodeId.Identifier.ToString(),
                 MonitoringMode = mode,
                 SamplingInterval = mode == MonitoringMode.Sampling ? 1000 : 0,
-                QueueSize = 0,
+                QueueSize = 100,
                 DiscardOldest = true
             };
 
@@ -81,7 +81,6 @@ namespace OpcPlc.Tests
             var events = _events.ToList();
 
             // Assert
-            Thread.Sleep(5000);
             events.Should().HaveCountGreaterOrEqualTo(4)
                 .And.HaveCountLessOrEqualTo(6);
             var values = events.Select(a => (uint)((MonitoredItemNotification)a.NotificationValue).Value.Value).ToList();
