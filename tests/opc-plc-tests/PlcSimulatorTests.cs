@@ -69,14 +69,14 @@ namespace OpcPlc.Tests
 
             var period = TimeSpan.FromSeconds(periodInSeconds);
             var cycles = 15;
-            var splinterval = 10;
-            var n = cycles * splinterval;
+            var readsPerPeriod = 10;
+            var n = cycles * readsPerPeriod;
             var values = Enumerable.Range(0, n)
                 .Select(i =>
                 {
                     if (i > 0)
                     {
-                        Thread.Sleep(period / splinterval);
+                        Thread.Sleep(period / readsPerPeriod);
                     }
 
                     try
