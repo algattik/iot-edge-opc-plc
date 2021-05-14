@@ -14,21 +14,12 @@ namespace OpcPlc.Tests
     {
         const string OpcPlcNamespaceUri = "http://microsoft.com/Opc/OpcPlc/";
 
-        private PlcSimulatorFixture _simulator;
         private Session _session;
 
         [OneTimeSetUp]
         public void Setup()
         {
-            _simulator = new PlcSimulatorFixture();
-            _session = _simulator.CreateSessionAsync(nameof(PlcSimulatorTests)).GetAwaiter().GetResult();
-        }
-
-        [OneTimeTearDown]
-        public void TearDown()
-        {
-            _session.CloseSession(null, true);
-            _simulator.Dispose();
+            _session = PlcSimulatorFixture.Instance.CreateSessionAsync(nameof(PlcSimulatorTests)).GetAwaiter().GetResult();
         }
 
         [Test]
@@ -41,7 +32,7 @@ namespace OpcPlc.Tests
             var nodeId = GetOpcPlcNodeId(identifier);
 
             var period = TimeSpan.FromSeconds(periodInSeconds);
-            
+
             // Measure the value 4 times, sleeping for a third of the period at which the value changes each time.
             // The number of times the value changes over the 4 measurements should be between 1 and 2.
             object lastValue = null;
@@ -115,7 +106,7 @@ namespace OpcPlc.Tests
                 .WhichValue
                 .Should().HaveCountGreaterThan(n * 5 / 10)
                 .And.OnlyContain(v => v.Value != null);
-            
+
             valuesByStatus
                 .Should().ContainKey(StatusCodes.UncertainLastUsableValue)
                 .WhichValue

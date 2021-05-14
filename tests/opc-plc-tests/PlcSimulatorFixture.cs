@@ -12,11 +12,13 @@ namespace OpcPlc.Tests
     using OpcPlc;
     using Serilog;
 
-    public class PlcSimulatorFixture : IDisposable
+    [SetUpFixture]
+    public class PlcSimulatorFixture
     {
         private TextWriter _log;
 
-        public PlcSimulatorFixture()
+        [OneTimeSetUp]
+        public void RunBeforeAnyTests()
         {
             Program.Logger = new LoggerConfiguration()
                 .WriteTo.NUnitOutput()
@@ -28,10 +30,16 @@ namespace OpcPlc.Tests
             Config = GetConfiguration().GetAwaiter().GetResult();
             var endpoint = CoreClientUtils.SelectEndpoint(endpointUrl, false, 15000);
             ServerEndpoint = GetServerEndpoint(endpoint, Config);
+            Instance = this;
         }
 
-        public void Dispose()
+        [OneTimeTearDown]
+        public void RunAfterAnyTests()
         {
+            // TODO shutdown simulator
+            ServerTask = null;
+            Config = null;
+            ServerEndpoint = null;
         }
 
         private string WaitForServerUp()
@@ -59,11 +67,13 @@ namespace OpcPlc.Tests
             }
         }
 
-        public Task ServerTask { get; }
+        public static PlcSimulatorFixture Instance { get; private set; }
 
-        public ApplicationConfiguration Config { get; }
+        private Task ServerTask { get; set; }
 
-        public ConfiguredEndpoint ServerEndpoint { get; }
+        private ApplicationConfiguration Config { get; set; }
+
+        private ConfiguredEndpoint ServerEndpoint { get; set; }
 
         public async Task<ApplicationConfiguration> GetConfiguration()
         {
