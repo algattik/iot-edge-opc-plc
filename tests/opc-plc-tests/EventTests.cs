@@ -29,7 +29,7 @@ namespace OpcPlc.Tests
 
             _eventType = ExpandedNodeId.ToNodeId(SimpleEvents.ObjectTypeIds.SystemCycleStartedEventType, Session.NamespaceUris);
             _eventType.Should().NotBeNull();
-            CreateMonitoredItem(_eventType);
+            CreateMonitoredItem(Server, _eventType, NodeClass.Object, Attributes.EventNotifier);
         }
 
         /// <summary>
@@ -46,27 +46,37 @@ namespace OpcPlc.Tests
             }
         }
 
-        private void CreateMonitoredItem(NodeId nodeId)
+        private void CreateMonitoredItem(NodeId startNodeId, NodeId nodeId, NodeClass nodeClass, uint attributeId)
         {
-            _monitoredItem = new MonitoredItem(_subscription.DefaultItem)
-            {
-                DisplayName = nameof(Server),
-                StartNodeId = Server,
-                NodeClass = NodeClass.Object,
-                SamplingInterval = 0,
-                AttributeId = Attributes.EventNotifier,
-                QueueSize = 0
-            };
+            NewMonitoredItem(startNodeId, nodeClass, attributeId);
 
             // add condition fields to retrieve selected event.
             var filter = (EventFilter)_monitoredItem.Filter;
             var whereClause = filter.WhereClause;
             whereClause.Push(FilterOperator.OfType, nodeId);
 
-            _monitoredItem.Notification += MonitoredItem_Notification;
+            AddMonitoredItem();
+        }
 
+        private void AddMonitoredItem()
+        {
             _subscription.AddItem(_monitoredItem);
             _subscription.ApplyChanges();
+        }
+
+        private void NewMonitoredItem(NodeId startNodeId, NodeClass nodeClass, uint attributeId)
+        {
+            _monitoredItem = new MonitoredItem(_subscription.DefaultItem)
+            {
+                DisplayName = startNodeId.Identifier.ToString(),
+                StartNodeId = startNodeId,
+                NodeClass = nodeClass,
+                SamplingInterval = 0,
+                AttributeId = attributeId,
+                QueueSize = 0
+            };
+
+            _monitoredItem.Notification += MonitoredItem_Notification;
         }
 
         private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)

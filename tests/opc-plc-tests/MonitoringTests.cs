@@ -15,6 +15,7 @@ namespace OpcPlc.Tests
         private Subscription _subscription;
 
         private readonly ConcurrentQueue<MonitoredItemNotificationEventArgs> _events = new ConcurrentQueue<MonitoredItemNotificationEventArgs>();
+        private MonitoredItem _monitoredItem;
 
         [SetUp]
         public void CreateSubscription()
@@ -25,7 +26,7 @@ namespace OpcPlc.Tests
 
             var nodeId = GetOpcPlcNodeId("FastUInt1");
             nodeId.Should().NotBeNull();
-            CreateMonitoredItem(nodeId, MonitoringMode.Reporting);
+            CreateMonitoredItem(nodeId, NodeClass.Variable, Attributes.Value);
         }
 
         /// <summary>
@@ -42,26 +43,34 @@ namespace OpcPlc.Tests
             }
         }
 
-        private void CreateMonitoredItem(
-            NodeId nodeId,
-            MonitoringMode mode)
+        private void CreateMonitoredItem(NodeId startNodeId, NodeClass nodeClass, uint attributeId)
+        {
+            NewMonitoredItem(startNodeId, nodeClass, attributeId);
+
+            AddMonitoredItem();
+        }
+
+        private void AddMonitoredItem()
+        {
+            _subscription.AddItem(_monitoredItem);
+            _subscription.ApplyChanges();
+        }
+
+        private void NewMonitoredItem(NodeId startNodeId, NodeClass nodeClass, uint attributeId)
         {
             // add the new monitored item.
-            var monitoredItem = new MonitoredItem
+            // _monitoredItem = new MonitoredItem
+            _monitoredItem = new MonitoredItem(_subscription.DefaultItem)
             {
-                StartNodeId = nodeId,
-                AttributeId = Attributes.Value,
-                DisplayName = nodeId.Identifier.ToString(),
-                MonitoringMode = mode,
-                SamplingInterval = mode == MonitoringMode.Sampling ? 1000 : 0,
-                QueueSize = 100,
-                DiscardOldest = true
+                DisplayName = startNodeId.Identifier.ToString(),
+                StartNodeId = startNodeId,
+                NodeClass = nodeClass,
+                SamplingInterval = 0,
+                AttributeId = attributeId,
+                QueueSize = 0
             };
 
-            monitoredItem.Notification += MonitoredItem_Notification;
-
-            _subscription.AddItem(monitoredItem);
-            _subscription.ApplyChanges();
+            _monitoredItem.Notification += MonitoredItem_Notification;
         }
 
         private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
