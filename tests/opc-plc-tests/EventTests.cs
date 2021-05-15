@@ -1,13 +1,13 @@
 namespace OpcPlc.Tests
 {
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using FluentAssertions;
     using NUnit.Framework;
     using Opc.Ua;
     using Opc.Ua.Client;
-    using ObjectTypeIds = SimpleEvents.ObjectTypeIds;
 
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
@@ -16,17 +16,20 @@ namespace OpcPlc.Tests
         private Subscription _subscription;
 
         private readonly ConcurrentQueue<MonitoredItemNotificationEventArgs> _events = new ConcurrentQueue<MonitoredItemNotificationEventArgs>();
+        private MonitoredItem _monitoredItem;
+        private static readonly NodeId Server = Opc.Ua.ObjectIds.Server;
+        private NodeId _eventType;
 
         [SetUp]
         public void CreateSubscription()
         {
             _subscription = new Subscription(Session.DefaultSubscription);
             Session.AddSubscription(_subscription);
-                _subscription.Create();
+            _subscription.Create();
 
-            var nodeId = ExpandedNodeId.ToNodeId(ObjectTypeIds.SystemCycleStartedEventType, Session.NamespaceUris);
-            nodeId.Should().NotBeNull();
-            CreateMonitoredItem(nodeId, MonitoringMode.Reporting);
+            _eventType = ExpandedNodeId.ToNodeId(SimpleEvents.ObjectTypeIds.SystemCycleStartedEventType, Session.NamespaceUris);
+            _eventType.Should().NotBeNull();
+            CreateMonitoredItem(_eventType);
         }
 
         /// <summary>
@@ -43,80 +46,27 @@ namespace OpcPlc.Tests
             }
         }
 
-        private void CreateMonitoredItem(
-            NodeId nodeId,
-            MonitoringMode mode)
+        private void CreateMonitoredItem(NodeId nodeId)
         {
-            /*
-            // create a monitored item based on the current filter settings.            
-            var monitoredItem = new MonitoredItem
+            _monitoredItem = new MonitoredItem(_subscription.DefaultItem)
             {
-                StartNodeId = Opc.Ua.ObjectIds.Server,
-                AttributeId = Attributes.EventNotifier,
-                MonitoringMode = MonitoringMode.Reporting,
-                NodeClass = NodeClass.Unspecified,
+                DisplayName = nameof(Server),
+                StartNodeId = Server,
+                NodeClass = NodeClass.Object,
                 SamplingInterval = 0,
-                QueueSize = 1000,
-                DiscardOldest = true,
-                Filter = null
+                AttributeId = Attributes.EventNotifier,
+                QueueSize = 0
             };
 
-            monitoredItem.Notification += MonitoredItem_Notification;
+            // add condition fields to retrieve selected event.
+            var filter = (EventFilter)_monitoredItem.Filter;
+            var whereClause = filter.WhereClause;
+            whereClause.Push(FilterOperator.OfType, nodeId);
 
-            _subscription.AddItem(monitoredItem);
+            _monitoredItem.Notification += MonitoredItem_Notification;
+
+            _subscription.AddItem(_monitoredItem);
             _subscription.ApplyChanges();
-            */
-            // the filter to use.
-            // var a = Opc.Ua.NodeId.Create(SimpleEvents.ObjectTypes.SystemCycleStatusEventType, SimpleEvents.Namespaces.SimpleEvents, Session.NamespaceUris);
-            // var n = ExpandedNodeId.ToNodeId(ObjectTypeIds.SystemCycleStatusEventType, Session.NamespaceUris);
-            var n = ExpandedNodeId.ToNodeId(Opc.Ua.ObjectTypes.TripAlarmType, Session.NamespaceUris);
-
-            /*
-            TypeDeclaration pubSubStatusEventType = new TypeDeclaration
-            {
-                NodeId = n,
-                Declarations = ClientUtils.CollectInstanceDeclarationsForType(Session, n)
-            };
-
-            var m_filter = new FilterDeclaration(pubSubStatusEventType, null);
-
-            // var m_filter = new FilterDeclaration();
- 
-// create a monitored item based on the current filter settings.            
-            var m_monitoredItem = new MonitoredItem();
-            m_monitoredItem.StartNodeId = Opc.Ua.ObjectIds.Server;
-            m_monitoredItem.StartNodeId = NodeId.Create("0:East/Blue", OpcPlc.Namespaces.OpcPlcAlarmsInstance, Session.NamespaceUris);
-            m_monitoredItem.AttributeId = Attributes.EventNotifier;
-            // m_monitoredItem.SamplingInterval = 0;
-            m_monitoredItem.QueueSize = 1000;
-            m_monitoredItem.DiscardOldest = true;
-            m_monitoredItem.Filter = m_filter.GetFilter();
-            m_monitoredItem.NodeClass = NodeClass.Object;
- 
-            _subscription.AddItem(m_monitoredItem);
-            _subscription.ApplyChanges();
-            */
-            var subscription = _subscription;
-                MonitoredItem monitoredItem = new MonitoredItem(subscription.DefaultItem);
-
-                monitoredItem.DisplayName = "Server";
-                monitoredItem.StartNodeId = NodeId.Parse("i=2253");
-            var s = Opc.Ua.ObjectIds.Server;
-            var b = Session.ReadNode(monitoredItem.StartNodeId);
-                monitoredItem.NodeClass = NodeClass.Object;
-                monitoredItem.AttributeId      = Attributes.Value;
-                monitoredItem.SamplingInterval = 0;
-                monitoredItem.QueueSize        = 1;
-
-                // add condition fields to any event filter.
-                EventFilter filter = monitoredItem.Filter as EventFilter;
-                    monitoredItem.AttributeId = Attributes.EventNotifier;
-                    monitoredItem.QueueSize = 0;
-            monitoredItem.Notification += MonitoredItem_Notification;
-        
-                subscription.AddItem(monitoredItem);
-                subscription.ApplyChanges();
-
         }
 
         private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
@@ -125,10 +75,9 @@ namespace OpcPlc.Tests
         }
 
         [Test]
-        public void Eventing_NotifiesValueUpdates()
+        public void EventSubscribed_FiresNotification()
         {
             // Arrange
-            // Thread.Sleep(6000);
             _events.Clear();
 
             // Act: collect events during 5 seconds
@@ -138,10 +87,32 @@ namespace OpcPlc.Tests
 
             // Assert
             events.Should().HaveCountGreaterOrEqualTo(2)
-                .And.HaveCountLessOrEqualTo(3);
-            var values = events.Select(a => (uint)((MonitoredItemNotification)a.NotificationValue).Value.Value).ToList();
-            var differences = values.Zip(values.Skip(1), (x, y) => y - x);
-            differences.Should().AllBeEquivalentTo(1, $"elements of sequence {string.Join(",", values)} should be increasing by interval 1");
+                .And.HaveCountLessOrEqualTo(5);
+            var values = events
+                .Select(a => (EventFieldList)a.NotificationValue)
+                .Select(EventFieldListToDictionary);
+            foreach (var value in values)
+            {
+                value.Should().Contain(new Dictionary<string, object>
+                {
+                    ["/EventType"] = _eventType,
+                    ["/SourceNode"] = Server,
+                    ["/SourceName"] = "System",
+                });
+                value.Should().ContainKey("/Message")
+                    .WhichValue.Should().BeOfType<LocalizedText>()
+                    .Which.Text.Should().MatchRegex("^The system cycle '\\d+' has started\\.$");
+            }
+        }
+
+        private Dictionary<string, object> EventFieldListToDictionary(EventFieldList arg)
+        {
+            return
+                ((EventFilter)_monitoredItem.Filter).SelectClauses // all retrieved fields for event
+                .Zip(arg.EventFields) // values of retrieved fields
+                .ToDictionary(
+                    p => SimpleAttributeOperand.Format(p.First.BrowsePath), // e.g. "/EventId"
+                    p => p.Second.Value);
         }
     }
 
