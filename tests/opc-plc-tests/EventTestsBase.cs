@@ -11,8 +11,8 @@ namespace OpcPlc.Tests
     {
         private Subscription _subscription;
 
-        protected readonly ConcurrentQueue<MonitoredItemNotificationEventArgs> _events = new ConcurrentQueue<MonitoredItemNotificationEventArgs>();
-        protected MonitoredItem _monitoredItem;
+        protected readonly ConcurrentQueue<MonitoredItemNotificationEventArgs> ReceivedEvents = new ConcurrentQueue<MonitoredItemNotificationEventArgs>();
+        protected MonitoredItem MonitoredItem;
         protected static readonly NodeId Server = Opc.Ua.ObjectIds.Server;
 
         [SetUp]
@@ -39,13 +39,13 @@ namespace OpcPlc.Tests
 
         protected void AddMonitoredItem()
         {
-            _subscription.AddItem(_monitoredItem);
+            _subscription.AddItem(MonitoredItem);
             _subscription.ApplyChanges();
         }
 
         protected void NewMonitoredItem(NodeId startNodeId, NodeClass nodeClass, uint attributeId)
         {
-            _monitoredItem = new MonitoredItem(_subscription.DefaultItem)
+            MonitoredItem = new MonitoredItem(_subscription.DefaultItem)
             {
                 DisplayName = startNodeId.Identifier.ToString(),
                 StartNodeId = startNodeId,
@@ -55,12 +55,12 @@ namespace OpcPlc.Tests
                 QueueSize = 0
             };
 
-            _monitoredItem.Notification += MonitoredItem_Notification;
+            MonitoredItem.Notification += MonitoredItem_Notification;
         }
 
         private void MonitoredItem_Notification(MonitoredItem monitoredItem, MonitoredItemNotificationEventArgs e)
         {
-            _events.Enqueue(e);
+            ReceivedEvents.Enqueue(e);
         }
     }
 

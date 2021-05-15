@@ -22,7 +22,7 @@ namespace OpcPlc.Tests
             NewMonitoredItem(Server, NodeClass.Object, Attributes.EventNotifier);
 
             // add condition fields to retrieve selected event.
-            var filter = (EventFilter)_monitoredItem.Filter;
+            var filter = (EventFilter)MonitoredItem.Filter;
             var whereClause = filter.WhereClause;
             whereClause.Push(FilterOperator.OfType, _eventType);
 
@@ -33,12 +33,12 @@ namespace OpcPlc.Tests
         public void EventSubscribed_FiresNotification()
         {
             // Arrange
-            _events.Clear();
+            ReceivedEvents.Clear();
 
             // Act: collect events during 5 seconds
             // Event is fired every 3 seconds
             Thread.Sleep(5000);
-            var events = _events.ToList();
+            var events = ReceivedEvents.ToList();
 
             // Assert
             events.Should().HaveCountGreaterOrEqualTo(2)
@@ -63,7 +63,7 @@ namespace OpcPlc.Tests
         private Dictionary<string, object> EventFieldListToDictionary(EventFieldList arg)
         {
             return
-                ((EventFilter)_monitoredItem.Filter).SelectClauses // all retrieved fields for event
+                ((EventFilter)MonitoredItem.Filter).SelectClauses // all retrieved fields for event
                 .Zip(arg.EventFields) // values of retrieved fields
                 .ToDictionary(
                     p => SimpleAttributeOperand.Format(p.First.BrowsePath), // e.g. "/EventId"

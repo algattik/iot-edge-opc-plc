@@ -1,12 +1,10 @@
 namespace OpcPlc.Tests
 {
-    using System.Collections.Concurrent;
     using System.Linq;
     using System.Threading;
     using FluentAssertions;
     using NUnit.Framework;
     using Opc.Ua;
-    using Opc.Ua.Client;
 
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
@@ -17,12 +15,8 @@ namespace OpcPlc.Tests
         {
             var nodeId = GetOpcPlcNodeId("FastUInt1");
             nodeId.Should().NotBeNull();
-            CreateMonitoredItem(nodeId, NodeClass.Variable, Attributes.Value);
-        }
 
-        private void CreateMonitoredItem(NodeId startNodeId, NodeClass nodeClass, uint attributeId)
-        {
-            NewMonitoredItem(startNodeId, nodeClass, attributeId);
+            NewMonitoredItem(nodeId, NodeClass.Variable, Attributes.Value);
 
             AddMonitoredItem();
         }
@@ -31,12 +25,12 @@ namespace OpcPlc.Tests
         public void Monitoring_NotifiesValueUpdates()
         {
             // Arrange
-            _events.Clear();
+            ReceivedEvents.Clear();
 
             // Act: collect events during 5 seconds
             // Value is updated every second
             Thread.Sleep(5000);
-            var events = _events.ToList();
+            var events = ReceivedEvents.ToList();
 
             // Assert
             events.Should().HaveCountGreaterOrEqualTo(4)
@@ -46,5 +40,4 @@ namespace OpcPlc.Tests
             differences.Should().AllBeEquivalentTo(1, $"elements of sequence {string.Join(",", values)} should be increasing by interval 1");
         }
     }
-
 }
