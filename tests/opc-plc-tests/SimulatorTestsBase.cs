@@ -7,7 +7,7 @@ namespace OpcPlc.Tests
 
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
-    public class SimulatorTestsBase
+    public abstract class SimulatorTestsBase
     {
         private const string OpcPlcNamespaceUri = "http://microsoft.com/Opc/OpcPlc/";
         
