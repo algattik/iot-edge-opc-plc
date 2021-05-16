@@ -16,7 +16,7 @@ namespace OpcPlc.Tests
             var nodeId = GetOpcPlcNodeId("FastUInt1");
             nodeId.Should().NotBeNull();
 
-            NewMonitoredItem(nodeId, NodeClass.Variable, Attributes.Value);
+            SetUpMonitoredItem(nodeId, NodeClass.Variable, Attributes.Value);
 
             AddMonitoredItem();
         }

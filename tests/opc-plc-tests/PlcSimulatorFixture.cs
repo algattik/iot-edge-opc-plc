@@ -24,7 +24,7 @@ namespace OpcPlc.Tests
                 .WriteTo.NUnitOutput()
                 .CreateLogger();
             _log = TestContext.Progress;
-            ServerTask = Task.Run(() => Program.MainAsync(new[] { "--autoaccept" }).GetAwaiter().GetResult());
+            ServerTask = Task.Run(() => Program.MainAsync(new[] { "--autoaccept", "--simpleevents", "--alm" }).GetAwaiter().GetResult());
             var endpointUrl = WaitForServerUp();
             _log.Write($"Found server at {endpointUrl}");
             Config = await GetConfigurationAsync();

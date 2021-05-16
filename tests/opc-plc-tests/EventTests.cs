@@ -16,10 +16,9 @@ namespace OpcPlc.Tests
         [SetUp]
         public void CreateMonitoredItem()
         {
-            _eventType = ExpandedNodeId.ToNodeId(SimpleEvents.ObjectTypeIds.SystemCycleStartedEventType, Session.NamespaceUris);
-            _eventType.Should().NotBeNull();
+            _eventType = ToNodeId(SimpleEvents.ObjectTypeIds.SystemCycleStartedEventType);
             
-            NewMonitoredItem(Server, NodeClass.Object, Attributes.EventNotifier);
+            SetUpMonitoredItem(Server, NodeClass.Object, Attributes.EventNotifier);
 
             // add condition fields to retrieve selected event.
             var filter = (EventFilter)MonitoredItem.Filter;
@@ -58,16 +57,6 @@ namespace OpcPlc.Tests
                     .WhichValue.Should().BeOfType<LocalizedText>()
                     .Which.Text.Should().MatchRegex("^The system cycle '\\d+' has started\\.$");
             }
-        }
-
-        private Dictionary<string, object> EventFieldListToDictionary(EventFieldList arg)
-        {
-            return
-                ((EventFilter)MonitoredItem.Filter).SelectClauses // all retrieved fields for event
-                .Zip(arg.EventFields) // values of retrieved fields
-                .ToDictionary(
-                    p => SimpleAttributeOperand.Format(p.First.BrowsePath), // e.g. "/EventId"
-                    p => p.Second.Value);
         }
     }
 }

@@ -1,6 +1,7 @@
 namespace OpcPlc.Tests
 {
     using System.Threading.Tasks;
+    using FluentAssertions;
     using NUnit.Framework;
     using Opc.Ua;
     using Opc.Ua.Client;
@@ -33,5 +34,45 @@ namespace OpcPlc.Tests
                 Session.NamespaceUris);
             return nodeId;
         }
+
+        protected NodeId FindNode(NodeId startingNode, string relativePath)
+        {
+            var browsePaths = new BrowsePathCollection
+            {
+                new BrowsePath
+                {
+                    StartingNode = startingNode,
+                    RelativePath = Opc.Ua.RelativePath.Parse(relativePath, Session.TypeTree)
+                }
+            };
+
+            Session.TranslateBrowsePathsToNodeIds(
+                null,
+                browsePaths,
+                out var results,
+                out var _);
+
+            var nodeId = results
+                .Should().ContainSingle()
+                .Subject.Targets
+                .Should().ContainSingle()
+                .Subject.TargetId;
+            return ToNodeId(nodeId);
+        }
+
+        protected NodeId ToNodeId(ExpandedNodeId nodeId)
+        {
+            var e = ExpandedNodeId.ToNodeId(nodeId, Session.NamespaceUris);
+            e.Should().NotBeNull();
+            return e;
+        }
+
+        protected NodeId ToNodeId(uint nodeId)
+        {
+            var e = ExpandedNodeId.ToNodeId(nodeId, Session.NamespaceUris);
+            e.Should().NotBeNull();
+            return e;
+        }
+
     }
 }
