@@ -18,9 +18,8 @@ namespace OpcPlc.Tests
         {
             _eventType = ToNodeId(Opc.Ua.ObjectTypes.TripAlarmType);
 
-            var ns = Session.NamespaceUris.GetIndex(OpcPlc.Namespaces.OpcPlcAlarmsInstance);
-            var areaNode = FindNode(Server, $"{ns}:Green/{ns}:East/{ns}:Blue");
-            var southMotor = FindNode(areaNode, $"{ns}:SouthMotor");
+            var areaNode = FindNode(Server, OpcPlc.Namespaces.OpcPlcAlarmsInstance, "Green", "East", "Blue");
+            var southMotor = FindNode(areaNode, OpcPlc.Namespaces.OpcPlcAlarmsInstance, "SouthMotor");
 
             SetUpMonitoredItem(areaNode, NodeClass.Object, Attributes.EventNotifier);
 

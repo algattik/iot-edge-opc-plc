@@ -1,5 +1,6 @@
 namespace OpcPlc.Tests
 {
+    using System.Linq;
     using System.Threading.Tasks;
     using FluentAssertions;
     using NUnit.Framework;
@@ -11,7 +12,9 @@ namespace OpcPlc.Tests
     public abstract class SimulatorTestsBase
     {
         private const string OpcPlcNamespaceUri = "http://microsoft.com/Opc/OpcPlc/";
-        
+        protected static readonly NodeId Server = Opc.Ua.ObjectIds.Server;
+        protected static readonly NodeId ObjectsFolder = Opc.Ua.ObjectIds.ObjectsFolder;
+
         protected Session Session;
 
         [OneTimeSetUp]
@@ -33,6 +36,13 @@ namespace OpcPlc.Tests
                 OpcPlcNamespaceUri,
                 Session.NamespaceUris);
             return nodeId;
+        }
+
+        protected NodeId FindNode(NodeId startingNode, string namespaceUri, params string[] pathParts)
+        {
+            var ns = Session.NamespaceUris.GetIndex(namespaceUri);
+            return FindNode(startingNode,
+                string.Join('/', pathParts.Select(s => $"{ns}:{s}")));
         }
 
         protected NodeId FindNode(NodeId startingNode, string relativePath)

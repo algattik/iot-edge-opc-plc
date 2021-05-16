@@ -15,7 +15,6 @@ namespace OpcPlc.Tests
 
         protected readonly ConcurrentQueue<MonitoredItemNotificationEventArgs> ReceivedEvents = new ConcurrentQueue<MonitoredItemNotificationEventArgs>();
         protected MonitoredItem MonitoredItem;
-        protected static readonly NodeId Server = Opc.Ua.ObjectIds.Server;
 
         [SetUp]
         public void CreateSubscription()
@@ -54,7 +53,7 @@ namespace OpcPlc.Tests
                 NodeClass = nodeClass,
                 SamplingInterval = 0,
                 AttributeId = attributeId,
-                QueueSize = 0
+                QueueSize = 1000
             };
 
             MonitoredItem.Notification += MonitoredItem_Notification;
