@@ -2,6 +2,7 @@ namespace OpcPlc.Tests
 {
     using System.Linq;
     using System.Threading.Tasks;
+    using Bogus;
     using FluentAssertions;
     using NUnit.Framework;
     using Opc.Ua;
@@ -14,6 +15,7 @@ namespace OpcPlc.Tests
         private const string OpcPlcNamespaceUri = "http://microsoft.com/Opc/OpcPlc/";
         protected static readonly NodeId Server = Opc.Ua.ObjectIds.Server;
         protected static readonly NodeId ObjectsFolder = Opc.Ua.ObjectIds.ObjectsFolder;
+        protected static readonly Faker Fake = new Faker();
 
         protected Session Session;
 
