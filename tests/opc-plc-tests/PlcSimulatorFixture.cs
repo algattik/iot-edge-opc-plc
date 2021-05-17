@@ -18,16 +18,16 @@ namespace OpcPlc.Tests
         private TextWriter _log;
 
         [OneTimeSetUp]
-        public void RunBeforeAnyTests()
+        public async Task RunBeforeAnyTests()
         {
             Program.Logger = new LoggerConfiguration()
                 .WriteTo.NUnitOutput()
                 .CreateLogger();
             _log = TestContext.Progress;
-            ServerTask = Task.Run(() => Program.MainAsync(new[] { "--autoaccept" }).GetAwaiter().GetResult());
+            ServerTask = Task.Run(() => Program.MainAsync(new[] { "--autoaccept", "--simpleevents", "--alm", "--ref" }).GetAwaiter().GetResult());
             var endpointUrl = WaitForServerUp();
             _log.Write($"Found server at {endpointUrl}");
-            Config = GetConfiguration().GetAwaiter().GetResult();
+            Config = await GetConfigurationAsync();
             var endpoint = CoreClientUtils.SelectEndpoint(endpointUrl, false, 15000);
             ServerEndpoint = GetServerEndpoint(endpoint, Config);
             Instance = this;
@@ -75,7 +75,7 @@ namespace OpcPlc.Tests
 
         private ConfiguredEndpoint ServerEndpoint { get; set; }
 
-        public async Task<ApplicationConfiguration> GetConfiguration()
+        public async Task<ApplicationConfiguration> GetConfigurationAsync()
         {
             _log.WriteLine("Create an Application Configuration.");
 
